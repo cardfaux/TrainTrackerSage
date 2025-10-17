@@ -48,3 +48,14 @@ See the [Bedrock installation documentation](https://roots.io/bedrock/docs/insta
 - Follow [@rootswp on Twitter](https://twitter.com/rootswp)
 - Read the [Roots Blog](https://roots.io/blog/)
 - Subscribe to the [Roots Newsletter](https://roots.io/newsletter/)
+
+## NOTES
+
+sudo /usr/local/mysql/support-files/mysql.server start
+
+`valet start`
+`valet status`
+`valet link train-tracker`
+
+sage theme
+`npm run dev`
