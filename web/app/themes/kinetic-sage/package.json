@@ -24,6 +24,7 @@
     "vite": "^6.2.0"
   },
   "dependencies": {
+    "@tabler/icons-react": "^3.35.0",
     "axios": "^1.12.2",
     "leaflet": "^1.9.4",
     "react": "^19.2.0",
