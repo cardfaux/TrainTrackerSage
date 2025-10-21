@@ -10,7 +10,6 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import TrainMarkerIcon from './icons/TrainMarkerIcon.jsx';
 
-// Fix default marker icon in Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
@@ -32,7 +31,9 @@ const StationsMap = () => {
   const [error, setError] = useState(null);
 
   const trainPositions = useRef({});
+  const targetPositions = useRef({});
   const linePolylines = useRef({});
+  const animationFrame = useRef(null);
 
   // Fetch stations
   useEffect(() => {
@@ -59,7 +60,6 @@ const StationsMap = () => {
           });
         });
 
-        // Sort stations along each line
         Object.keys(polylines).forEach((line) => {
           polylines[line].sort((a, b) => a.order - b.order);
           polylines[line] = polylines[line].map((s) => [s.lat, s.lng]);
@@ -90,30 +90,50 @@ const StationsMap = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Animate trains smoothly along polylines
+  // Update target positions for trains whenever trains or stations update
   useEffect(() => {
     if (!trains.length || !stations.length) return;
-
-    const newPositions = {};
 
     trains.forEach((train) => {
       const polyline = linePolylines.current[train.line_code];
       if (!polyline || polyline.length < 2) return;
 
-      // Fraction along the line (0-1)
       const fraction = ((train.circuit_id || train.id) % 100) / 100;
-
       const segmentIndex = Math.floor(fraction * (polyline.length - 1));
       const localFraction = fraction * (polyline.length - 1) - segmentIndex;
 
       const start = polyline[segmentIndex];
       const end = polyline[Math.min(segmentIndex + 1, polyline.length - 1)];
 
-      newPositions[train.id] = interpolate(start, end, localFraction);
+      targetPositions.current[train.id] = interpolate(
+        start,
+        end,
+        localFraction
+      );
+      if (!trainPositions.current[train.id]) {
+        trainPositions.current[train.id] = targetPositions.current[train.id];
+      }
     });
-
-    trainPositions.current = newPositions;
   }, [trains, stations]);
+
+  // Smooth animation loop
+  useEffect(() => {
+    const animate = () => {
+      Object.keys(trainPositions.current).forEach((id) => {
+        const current = trainPositions.current[id];
+        const target = targetPositions.current[id];
+        if (!target) return;
+
+        // Move 5% towards target each frame
+        trainPositions.current[id] = interpolate(current, target, 0.05);
+      });
+
+      animationFrame.current = requestAnimationFrame(animate);
+    };
+
+    animationFrame.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrame.current);
+  }, []);
 
   if (loading) return <p>Loading map...</p>;
   if (error) return <p>Error: {error}</p>;
