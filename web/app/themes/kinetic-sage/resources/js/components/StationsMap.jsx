@@ -1,13 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  Polyline,
-} from 'react-leaflet';
-import L from 'leaflet';
+import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import TrainMarkers from './MapPieces/TrainMarkers.jsx';
+import StationMarkers from './MapPieces/StationMarkers.jsx';
+import RailLines from './MapPieces/RailLines.jsx';
+import L from 'leaflet';
 import TrainMarkerIcon from './icons/TrainMarkerIcon.jsx';
 import StationMarkerIcon from './icons/StationMarkerIcon.jsx';
 
@@ -19,7 +16,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-// Linear interpolation helper
 const interpolate = (a, b, fraction) => [
   a[0] + (b[0] - a[0]) * fraction,
   a[1] + (b[1] - a[1]) * fraction,
@@ -41,14 +37,11 @@ const StationsMap = () => {
     fetch('http://127.0.0.1:8000/api/stations')
       .then((res) => res.json())
       .then((data) => {
-        const parsed = data.map((s) => ({
-          ...s,
-          lines: JSON.parse(s.lines),
-        }));
+        const parsed = data.map((s) => ({ ...s, lines: JSON.parse(s.lines) }));
         setStations(parsed);
         setLoading(false);
 
-        // Build polylines for each line
+        // Build polylines
         const polylines = {};
         parsed.forEach((station) => {
           station.lines.forEach((line) => {
@@ -60,12 +53,10 @@ const StationsMap = () => {
             });
           });
         });
-
         Object.keys(polylines).forEach((line) => {
           polylines[line].sort((a, b) => a.order - b.order);
           polylines[line] = polylines[line].map((s) => [s.lat, s.lng]);
         });
-
         linePolylines.current = polylines;
       })
       .catch((err) => {
@@ -74,7 +65,7 @@ const StationsMap = () => {
       });
   }, []);
 
-  // Fetch trains periodically
+  // Fetch trains
   useEffect(() => {
     const fetchTrains = async () => {
       try {
@@ -91,7 +82,7 @@ const StationsMap = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Update target positions for trains whenever trains or stations update
+  // Update target positions
   useEffect(() => {
     if (!trains.length || !stations.length) return;
 
@@ -124,14 +115,10 @@ const StationsMap = () => {
         const current = trainPositions.current[id];
         const target = targetPositions.current[id];
         if (!target) return;
-
-        // Move 5% towards target each frame
         trainPositions.current[id] = interpolate(current, target, 0.05);
       });
-
       animationFrame.current = requestAnimationFrame(animate);
     };
-
     animationFrame.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationFrame.current);
   }, []);
@@ -149,67 +136,31 @@ const StationsMap = () => {
   return (
     <MapContainer center={center} zoom={13} className="h-[500px] w-full">
       {/* <TileLayer
-        url="https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png"
-        attribution="&copy; OpenRailwayMap &copy; OpenStreetMap contributors"
+      url="https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png"
+      attribution="&copy; OpenRailwayMap &copy; OpenStreetMap contributors"
       /> */}
       {/* <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
-        subdomains="abcd"
+      url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
+      subdomains="abcd"
       /> */}
       {/* <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        attribution="&copy; OpenStreetMap contributors &copy; CARTO"
-        subdomains="abcd"
+      url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+      attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+      subdomains="abcd"
       /> */}
       <TileLayer
         url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         attribution="&copy; OpenRailwayMap &copy; OpenStreetMap contributors"
       />
 
-      {/* Draw polylines */}
-      {Object.entries(linePolylines.current).map(([line, coords]) => (
-        <Polyline key={line} positions={coords} color="blue" weight={3} />
-      ))}
-
-      {/* Station markers */}
-      {stations.map((station) => (
-        <Marker
-          key={`station-${station.id}`}
-          position={[station.lat, station.lng]}
-          icon={StationMarkerIcon}
-        >
-          <Popup>
-            <strong>{station.name}</strong>
-            <br />
-            Code: {station.station_code}
-            <br />
-            Lines: {station.lines.join(', ')}
-          </Popup>
-        </Marker>
-      ))}
-
-      {/* Train markers */}
-      {trains.map((train) => {
-        const pos = trainPositions.current[train.id] || [38.9, -77.03];
-        return (
-          <Marker
-            key={`train-${train.id}`}
-            position={pos}
-            icon={TrainMarkerIcon}
-          >
-            <Popup>
-              <strong>Train {train.train_id}</strong>
-              <br />
-              Status: {train.status || 'Unknown'}
-              <br />
-              Service: {train.service_type || 'N/A'}
-              <br />
-              Direction: {train.direction || '-'}
-            </Popup>
-          </Marker>
-        );
-      })}
+      <RailLines linePolylines={linePolylines.current} />
+      <StationMarkers stations={stations} icon={StationMarkerIcon} />
+      <TrainMarkers
+        trains={trains}
+        trainPositions={trainPositions.current}
+        icon={TrainMarkerIcon}
+      />
     </MapContainer>
   );
 };
