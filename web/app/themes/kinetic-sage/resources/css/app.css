@@ -1,3 +1,7 @@
-@import "tailwindcss" theme(static);
+@import 'tailwindcss' theme(static);
 @source "../views/";
 @source "../../app/";
+
+.night-map-tile {
+  filter: brightness(0.2) contrast(1.2) saturate(0.8);
+}
