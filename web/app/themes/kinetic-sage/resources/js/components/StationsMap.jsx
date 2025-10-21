@@ -2,28 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-
 import TrainMarkerIcon from './icons/TrainMarkerIcon.jsx';
 
 // Fix for default marker icon in Leaflet + React
 delete L.Icon.Default.prototype._getIconUrl;
-
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
-
-//console.log('Train SVG URL:', trainSVG);
-
-// Custom train icon
-// const trainIcon = new L.Icon({
-//   //iconUrl: 'https://tabler.io/icons/icon/train', // Train icon URL
-//   iconSize: [30, 30],
-//   iconAnchor: [15, 15],
-//   popupAnchor: [0, -15],
-// });
 
 const StationsMap = () => {
   const [stations, setStations] = useState([]);
@@ -67,7 +55,6 @@ const StationsMap = () => {
 
     fetchTrains(); // Initial fetch
     const interval = setInterval(fetchTrains, 15000); // Refresh every 15s
-
     return () => clearInterval(interval);
   }, []);
 
@@ -83,6 +70,33 @@ const StationsMap = () => {
         stations.reduce((sum, s) => sum + s.lng, 0) / stations.length,
       ]
     : [38.9, -77.03]; // fallback
+
+  /**
+   * Simple helper: interpolate a point between two lat/lng pairs
+   * fraction = 0 → start, fraction = 1 → end
+   */
+  const interpolate = (a, b, fraction) => {
+    return [a[0] + (b[0] - a[0]) * fraction, a[1] + (b[1] - a[1]) * fraction];
+  };
+
+  /**
+   * Generate approximate coordinates for a train.
+   * For now, we’ll map circuit_id into a position between two nearby stations.
+   */
+  const getTrainPosition = (train, stations) => {
+    if (stations.length < 2) return [38.9, -77.03]; // fallback
+
+    // Use circuit_id to consistently place train
+    const idx = (train.circuit_id || train.id) % (stations.length - 1); // safe fallback
+    const start = stations[idx];
+    const end = stations[idx + 1];
+
+    if (!start || !end) return [38.9, -77.03];
+
+    // Fraction of the way between the two stations
+    const fraction = (train.circuit_id % 10) / 10; // 0–1 range
+    return interpolate([start.lat, start.lng], [end.lat, end.lng], fraction);
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -111,15 +125,11 @@ const StationsMap = () => {
 
         {/* Train Markers */}
         {trains.map((train) => {
-          // For now, randomly position trains near the center (replace later with circuit coordinates)
-          const lat = 38.9 + Math.random() * 0.05;
-          const lng = -77.03 + Math.random() * 0.05;
-
+          const [lat, lng] = getTrainPosition(train, stations);
           return (
             <Marker
               key={`train-${train.id}`}
               position={[lat, lng]}
-              //icon={trainIcon}
               icon={TrainMarkerIcon({ size: 30 })}
             >
               <Popup>
