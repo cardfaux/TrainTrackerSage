@@ -1,12 +1,11 @@
-// TrainMarkerIcon.jsx
 import L from 'leaflet';
-import { FaTrain } from 'react-icons/fa';
+import { FaBuilding } from 'react-icons/fa';
 import { renderToString } from 'react-dom/server';
 
-const TrainMarkerIcon = L.divIcon({
+const StationMarkerIcon = L.divIcon({
   html: renderToString(
-    <div style={{ fontSize: '24px', color: '#FF69B4' }}>
-      <FaTrain />
+    <div style={{ fontSize: '24px', color: '#00FFFF' }}>
+      <FaBuilding />
     </div>
   ),
   className: '', // remove default Leaflet styles
@@ -14,4 +13,4 @@ const TrainMarkerIcon = L.divIcon({
   iconAnchor: [12, 12], // center the icon
 });
 
-export default TrainMarkerIcon;
+export default StationMarkerIcon;

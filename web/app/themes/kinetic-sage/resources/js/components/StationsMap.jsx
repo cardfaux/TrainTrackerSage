@@ -9,6 +9,7 @@ import {
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import TrainMarkerIcon from './icons/TrainMarkerIcon.jsx';
+import StationMarkerIcon from './icons/StationMarkerIcon.jsx';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -147,8 +148,22 @@ const StationsMap = () => {
 
   return (
     <MapContainer center={center} zoom={13} className="h-[500px] w-full">
-      <TileLayer
+      {/* <TileLayer
         url="https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png"
+        attribution="&copy; OpenRailwayMap &copy; OpenStreetMap contributors"
+      /> */}
+      {/* <TileLayer
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
+        subdomains="abcd"
+      /> */}
+      {/* <TileLayer
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+        subdomains="abcd"
+      /> */}
+      <TileLayer
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         attribution="&copy; OpenRailwayMap &copy; OpenStreetMap contributors"
       />
 
@@ -162,6 +177,7 @@ const StationsMap = () => {
         <Marker
           key={`station-${station.id}`}
           position={[station.lat, station.lng]}
+          icon={StationMarkerIcon}
         >
           <Popup>
             <strong>{station.name}</strong>
@@ -180,7 +196,7 @@ const StationsMap = () => {
           <Marker
             key={`train-${train.id}`}
             position={pos}
-            icon={TrainMarkerIcon({ size: 30 })}
+            icon={TrainMarkerIcon}
           >
             <Popup>
               <strong>Train {train.train_id}</strong>
