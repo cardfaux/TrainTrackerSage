@@ -57,6 +57,9 @@ export default function useStationsAndTrains() {
         const res = await fetch('http://127.0.0.1:8000/api/trains');
         const data = await res.json();
         setTrains(data);
+
+        // --- ADD THIS LOG ---
+        console.log('Fetched train data:', data);
       } catch (err) {
         console.error(err);
       }
